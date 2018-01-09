@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import os
+import subprocess
 
 def walk(path, filter):
     '''yield every directory matched from filter(x) under path, recursively.'''
@@ -70,5 +71,11 @@ for (k,v) in cgr.items():
 print("\nBase images:")
 for i in sorted(get_base_images()):
     print('\t%s'% i)
+
+print("\nUpdating base images:")
+to_update = sorted(filter(lambda x: x.find('/') == -1, get_base_images()))
+cmd = ["parallel", "docker", "pull", "--"] + to_update
+print("\t%s" % cmd)
+subprocess.check_call(cmd)
 
 #print(cg)
