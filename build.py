@@ -47,7 +47,12 @@ def get_base_images():
         if i not in cg:
             yield i
 
+
+# container graph
+#   container_name (from fs) -> base (from Dockerfile)
 cg = {}
+# container graph reverse
+#   container_base_name -> [ container depending on this base recursively ]
 cgr = {}
 
 for i in walk('.', dockerfilter):
