@@ -9,5 +9,5 @@ RUN set -ex \
     && echo 'deb http://172.17.0.1:9999/debian-security stretch/updates main' >>/etc/apt/sources.list \
     && apt-get update -q \
     && apt-get upgrade -y -q \
-    && apt-get install -y -q --no-install-recommends vim-nox ca-certificates build-essential devscripts equivs \
+    && apt-get install -y -q --no-install-recommends vim-nox curl ca-certificates build-essential devscripts equivs \
     && apt-get clean
