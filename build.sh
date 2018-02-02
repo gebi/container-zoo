@@ -17,6 +17,7 @@ docker tag local/ubuntu:18.04 local/ubuntu:bionic
 
 # app images
 docker build -t local/hledger hledger
+docker build -t local/ida ida
 
 # not used anymore
 #docker build $* -t local/scribus scribus
