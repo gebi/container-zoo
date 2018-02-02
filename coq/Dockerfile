@@ -1,4 +1,4 @@
-FROM local/ubuntu:bionic
+FROM local/ubuntu:18.04
 MAINTAINER Michael Gebetsroither <mgebetsroither@mgit.at>
 
 RUN set -ex \

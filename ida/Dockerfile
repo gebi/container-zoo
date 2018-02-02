@@ -1,4 +1,4 @@
-FROM local/ubuntu:xenial
+FROM local/ubuntu:16.04
 MAINTAINER Michael Gebetsroither <mgebetsroither@mgit.at>
 
 COPY sha1sums /
@@ -18,7 +18,7 @@ RUN set -ex \
 ## final image
 ###
 
-FROM local/ubuntu:xenial
+FROM local/ubuntu:16.04
 MAINTAINER Michael Gebetsroither <mgebetsroither@mgit.at>
 
 # install dependencies
