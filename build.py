@@ -26,12 +26,14 @@ def dockerfilter(dir):
     return False
 
 def getbase(dir):
-    from_ = None
+    from_ = set()
     for i in open(os.path.join(dir, 'Dockerfile'), 'r').readlines():
         i = i.lower()
         if i.startswith('from'):
-            (cmd, args) = i.split(' ', 1)
-            return args.rstrip()
+            # fromcmd, baseimage, remainder
+            tmp = i.split(' ', 2)
+            from_.add(tmp[1].rstrip().lstrip())
+    return from_
 
 def get_container_name(dir):
     i = dir.lstrip('./').split('/')
@@ -49,25 +51,26 @@ def get_base_images():
 
 
 # container graph
-#   container_name (from fs) -> base (from Dockerfile)
+#   container_name (from fs) -> [ base (from Dockerfile) ]
 cg = {}
 # container graph reverse
-#   container_base_name -> [ container depending on this base recursively ]
+#   container_base_name -> [ container depending on this base ]
 cgr = {}
 
 for i in walk('.', dockerfilter):
     #print(i)
     container_base = getbase(i)
     container_name = get_container_name(i)
-    cg[container_name] = container_base.lstrip()
+    cg[container_name] = container_base
 
 # create reverse mapping
 print("Local Container:")
-for k,v in cg.items():
-    print("\t%s -> %s" %(k, v))
-    i = cgr.get(v, set())
-    i.add(k)
-    cgr[v] = i
+for container_name,base_set in cg.items():
+    print("\t%s -> %s" %(container_name, base_set))
+    for base in base_set:
+        i = cgr.get(base, set())
+        i.add(container_name)
+        cgr[base] = i
 
 print("\nPrint dependencies:")
 for (k,v) in cgr.items():
