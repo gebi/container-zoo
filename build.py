@@ -3,6 +3,7 @@
 import os
 import subprocess
 
+# walk {{{
 def walk(path, filter):
     '''yield every directory matched from filter(x) under path, recursively.'''
     def errhandler(err):
@@ -24,6 +25,7 @@ def dockerfilter(dir):
     if os.path.exists(os.path.join(tmp, 'Dockerfile')):
         return True
     return False
+# }}}
 
 def getbase(dir):
     from_ = set()

@@ -19,6 +19,6 @@ docker tag local/ubuntu:18.04 local/ubuntu:bionic
 docker build -t local/hledger hledger
 docker build -t local/ida ida
 
-# not used anymore
+# not used anymore / only for testing
 #docker build $* -t local/scribus scribus
 #docker build $* -t local/coq coq
