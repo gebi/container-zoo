@@ -5,6 +5,8 @@ COPY sha1sums /
 
 # download
 RUN set -ex \
+    #&& curl -sSf http://172.17.0.1/PUBLIC/ida/idafree70_linux.run >idafree70_linux.run \
+    #    || curl -sS https://out7.hex-rays.com/files/idafree70_linux.run >idafree70_linux.run \
     && curl -sS https://out7.hex-rays.com/files/idafree70_linux.run >idafree70_linux.run \
     && sha1sum -c sha1sums \
     && chmod 755 idafree70_linux.run
