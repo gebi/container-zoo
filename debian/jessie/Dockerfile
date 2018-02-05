@@ -1,5 +1,5 @@
 FROM debian:jessie
-MAINTAINER Michael Gebetsroither <mgebetsroither@mgit.at>
+MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
 RUN set -ex \
     && echo 'APT::Install-Recommends "false";' >/etc/apt/apt.conf.d/10own \

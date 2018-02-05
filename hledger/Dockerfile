@@ -1,5 +1,5 @@
 FROM local/debian:stretch
-MAINTAINER Michael Gebetsroither <mgebetsroither@mgit.at>
+MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
 RUN set -ex \
     && apt-get update -q \

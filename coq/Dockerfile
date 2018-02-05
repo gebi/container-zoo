@@ -1,5 +1,5 @@
 FROM local/ubuntu:18.04
-MAINTAINER Michael Gebetsroither <mgebetsroither@mgit.at>
+MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
 RUN set -ex \
     && add-apt-repository ppa:jgross-h/coq-8.7-daily \

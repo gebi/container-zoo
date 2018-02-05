@@ -1,5 +1,5 @@
 FROM local/ubuntu:16.04
-MAINTAINER Michael Gebetsroither <mgebetsroither@mgit.at>
+MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
 COPY sha1sums /
 
@@ -19,7 +19,7 @@ RUN set -ex \
 ###
 
 FROM local/ubuntu:16.04
-MAINTAINER Michael Gebetsroither <mgebetsroither@mgit.at>
+MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
 # install dependencies
 RUN set -ex \
