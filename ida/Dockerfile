@@ -24,7 +24,7 @@ MAINTAINER Michael Gebetsroither <mgebetsroither@mgit.at>
 # install dependencies
 RUN set -ex \
     && apt-get update -q \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y -q x11-common libxext6 libxcb1 libx11-xcb1 libfontconfig1 libxi6 libsm6 xkb-data
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends x11-common libxext6 libxcb1 libx11-xcb1 libfontconfig1 libxi6 libsm6 xkb-data
 
 COPY --from=0 /opt/idafree /opt/idafree
 
