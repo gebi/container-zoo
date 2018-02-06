@@ -1,3 +1,6 @@
+# Usage:
+# docker run -it --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --user 1000:1000 -e HOME=/mnt -v ~/ida:/mnt local/ida
+
 FROM local/ubuntu:16.04
 MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
@@ -35,4 +38,6 @@ COPY --from=0 /opt/idafree /opt/idafree
 #   ida prints an error about missing machine id
 RUN set -ex \
     && rm -f /opt/idafree/libX11-xcb.so.1 \
-    && (echo -n "highly secure but dont tell" |hexdump -n 16 -v -e '/1 "%02x"'; echo )>/etc/machine-id
+    && (echo -n "ida highly secure but dont tell" |md5sum |cut -d\  -f1)>/etc/machine-id
+
+ENTRYPOINT ["/opt/idafree/ida64"]
