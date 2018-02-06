@@ -18,7 +18,12 @@ docker tag local/ubuntu:18.04 local/ubuntu:bionic
 # app images
 docker build -t local/hledger hledger
 docker build -t local/ida ida
+docker build -t local/signal signal
 
 # not used anymore / only for testing
 #docker build $* -t local/scribus scribus
 #docker build $* -t local/coq coq
+
+# doesn't work
+#  wants to upload crash dump with wget, no error output if wget is available, and still does not work
+#docker build -t local/skype skype
