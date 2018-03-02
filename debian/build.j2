@@ -1,0 +1,30 @@
+{%
+set debian_releases = [
+    {"name": "wheezy", "tags": ["7", "oldoldstable"]},
+    {"name": "jessie", "tags": ["8", "oldstable"]},
+    {"name": "stretch", "tags": ["9", "stable"]},
+    {"name": "buster", "tags": ["testing"]},
+    {"name": "sid", "tags": ["unstable"]},
+]
+%}
+
+{% for i in debian_releases %}
+{{i.name}}:
+    dockerfile: Dockerfile.j2
+    tags:
+      - local/debian:{{i.name}}
+    {%- for tags in i.tags %}
+      - local/debian:{{tags}}
+    {%- endfor %}
+    base: debian:{{i.name}}
+    env:
+      dist_name: {{i.name}}
+
+{{i.name}}-dev:
+    dockerfile: Dockerfile-dev.j2
+    tags:
+      - local/debian:{{i.name}}-dev
+    base: local/debian:{{i.name}}
+    env:
+      dist_name: {{i.name}}
+{% endfor %} {# debian_releases #}

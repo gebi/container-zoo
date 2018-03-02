@@ -9,10 +9,3 @@ RUN set -ex \
     && echo 'deb http://172.17.0.1:9999/debian-security jessie/updates main' >>/etc/apt/sources.list
     && apt-get update -q \
     && apt-get upgrade -y -q
-
-RUN set -ex \
-    && apt-get install -y -q --no-install-recommends apt-file \
-    && apt-file update
-
-RUN set -ex \
-    && apt-get install -y -q --no-install-recommends vim-nox curl ca-certificates apt-transport-https build-essential devscripts equivs

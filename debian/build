@@ -1,0 +1,98 @@
+buster:
+  base: debian:buster
+  dockerfile: Dockerfile.j2
+  env:
+    IMAGE_BASE: debian:buster
+    IMAGE_NAME: buster
+    dist_name: buster
+  tags:
+  - local/debian:buster
+  - local/debian:testing
+buster-dev:
+  base: local/debian:buster
+  dockerfile: Dockerfile-dev.j2
+  env:
+    IMAGE_BASE: local/debian:buster
+    IMAGE_NAME: buster-dev
+    dist_name: buster
+  tags:
+  - local/debian:buster-dev
+jessie:
+  base: debian:jessie
+  dockerfile: Dockerfile.j2
+  env:
+    IMAGE_BASE: debian:jessie
+    IMAGE_NAME: jessie
+    dist_name: jessie
+  tags:
+  - local/debian:jessie
+  - local/debian:8
+  - local/debian:oldstable
+jessie-dev:
+  base: local/debian:jessie
+  dockerfile: Dockerfile-dev.j2
+  env:
+    IMAGE_BASE: local/debian:jessie
+    IMAGE_NAME: jessie-dev
+    dist_name: jessie
+  tags:
+  - local/debian:jessie-dev
+sid:
+  base: debian:sid
+  dockerfile: Dockerfile.j2
+  env:
+    IMAGE_BASE: debian:sid
+    IMAGE_NAME: sid
+    dist_name: sid
+  tags:
+  - local/debian:sid
+  - local/debian:unstable
+sid-dev:
+  base: local/debian:sid
+  dockerfile: Dockerfile-dev.j2
+  env:
+    IMAGE_BASE: local/debian:sid
+    IMAGE_NAME: sid-dev
+    dist_name: sid
+  tags:
+  - local/debian:sid-dev
+stretch:
+  base: debian:stretch
+  dockerfile: Dockerfile.j2
+  env:
+    IMAGE_BASE: debian:stretch
+    IMAGE_NAME: stretch
+    dist_name: stretch
+  tags:
+  - local/debian:stretch
+  - local/debian:9
+  - local/debian:stable
+stretch-dev:
+  base: local/debian:stretch
+  dockerfile: Dockerfile-dev.j2
+  env:
+    IMAGE_BASE: local/debian:stretch
+    IMAGE_NAME: stretch-dev
+    dist_name: stretch
+  tags:
+  - local/debian:stretch-dev
+wheezy:
+  base: debian:wheezy
+  dockerfile: Dockerfile.j2
+  env:
+    IMAGE_BASE: debian:wheezy
+    IMAGE_NAME: wheezy
+    dist_name: wheezy
+  tags:
+  - local/debian:wheezy
+  - local/debian:7
+  - local/debian:oldoldstable
+wheezy-dev:
+  base: local/debian:wheezy
+  dockerfile: Dockerfile-dev.j2
+  env:
+    IMAGE_BASE: local/debian:wheezy
+    IMAGE_NAME: wheezy-dev
+    dist_name: wheezy
+  tags:
+  - local/debian:wheezy-dev
