@@ -7,7 +7,7 @@ RUN set -ex \
     && echo 'deb http://172.17.0.1:9999/debian {{ dist_name }} main contrib non-free' >/etc/apt/sources.list \
 {%- if dist_name != "sid" %}
     && echo 'deb http://172.17.0.1:9999/debian {{ dist_name }}-updates main' >>/etc/apt/sources.list \
-    && echo 'deb http://172.17.0.1:9999/debian-security {{ dist_name }}/updates main' >>/etc/apt/sources.list
+    && echo 'deb http://172.17.0.1:9999/debian-security {{ dist_name }}/updates main' >>/etc/apt/sources.list \
 {%- endif %}
     && apt-get update -q \
     && apt-get upgrade -y -q

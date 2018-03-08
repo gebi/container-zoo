@@ -6,6 +6,6 @@ RUN set -ex \
     && echo 'Acquire::PDiffs "false";' >>/etc/apt/apt.conf.d/10own \
     && echo 'deb http://172.17.0.1:9999/debian jessie main contrib non-free' >/etc/apt/sources.list \
     && echo 'deb http://172.17.0.1:9999/debian jessie-updates main' >>/etc/apt/sources.list \
-    && echo 'deb http://172.17.0.1:9999/debian-security jessie/updates main' >>/etc/apt/sources.list
+    && echo 'deb http://172.17.0.1:9999/debian-security jessie/updates main' >>/etc/apt/sources.list \
     && apt-get update -q \
     && apt-get upgrade -y -q
