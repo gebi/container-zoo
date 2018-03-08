@@ -6,6 +6,7 @@ import subprocess
 import click
 import yaml
 from jinja2 import Environment, FileSystemLoader
+from concurrent.futures import ThreadPoolExecutor
 
 DEBUG=None
 
@@ -17,11 +18,6 @@ cg = {}
 cgr = {}
 
 PATH = os.path.dirname(os.path.abspath(__file__))
-TEMPLATE_ENVIRONMENT = Environment(
-    autoescape=False,
-    loader=FileSystemLoader(os.path.join(PATH, 'debian')),
-    trim_blocks=False)
-
 
 # walk {{{
 def walk(path, filter):
@@ -43,6 +39,13 @@ def dockerfilter(dir):
     '''special filter to match a directory with a Dockerfile'''
     tmp = os.path.abspath(dir)
     if os.path.exists(os.path.join(tmp, 'Dockerfile')):
+        return True
+    return False
+
+def buildfilter(dir):
+    '''special filter to match a directory with a build.j2 file'''
+    tmp = os.path.abspath(dir)
+    if os.path.exists(os.path.join(tmp, 'build.j2')):
         return True
     return False
 # }}}
@@ -77,6 +80,40 @@ def cli(debug):
     #click.echo('Debug mode is %s' % ('on' if debug else 'off'))
     global DEBUG
     DEBUG=debug
+
+def build_docker(cmds):
+    completed_processs = [subprocess.run(i, check=True, stdout=subprocess.PIPE) for i in cmds]
+    return completed_processs
+
+@cli.command()
+def build(): #{{{
+    executor = ThreadPoolExecutor(max_workers=8)
+    futures = []
+    for i in walk('.', buildfilter):
+        build_file = os.path.join(PATH, i, "build.j2")
+        if DEBUG:
+            print(i, build_file)
+        build = gen_build(build_file)
+        for k in sorted(build):
+            v = build[k]
+            first_docker_image_name = v['tags'][0]
+            other_docker_image_names = v['tags'][1:]
+            cmd = [["docker", "build", "--no-cache", "-t", first_docker_image_name, os.path.join(i, k)]]
+            cmd.extend([["docker", "tag", first_docker_image_name, tag] for tag in other_docker_image_names])
+            if DEBUG:
+                print(cmd)
+            else:
+                futures.append((executor.submit(build_docker, cmd), v))
+    for (future, build_spec) in futures.as_completed():
+        try:
+            completed_processs = future.result()
+        except Exception as e:
+            print('%r generated an exception: %s' %(build_spec, e))
+        else:
+            # output executed docker output!!
+            print('%r' %(build_spec))
+
+# }}}
 
 @cli.command()
 @click.option('--update/--no-update', default=False)
@@ -115,8 +152,12 @@ def upgrade_base(update): # {{{
     #print(cg)
 # }}}
 
-def create(docker_template, context, output):
-    html = TEMPLATE_ENVIRONMENT.get_template(docker_template).render(context)
+def gen_docker(docker_template, context, output):
+    tenv = Environment(
+        autoescape=False,
+        loader=FileSystemLoader(os.path.dirname(docker_template)),
+        trim_blocks=False)
+    html = tenv.get_template(os.path.basename(docker_template)).render(context)
     if DEBUG:
         os.makedirs(os.path.dirname(output), exist_ok=True)
         sys.stdout.write("# %s (%s)\n" %(docker_template, output))
@@ -127,24 +168,36 @@ def create(docker_template, context, output):
         f.write(html)
         f.write('\n')
 
-@cli.command()
-def build(): # {{{
-    '''Build all images'''
-    tname = "build.j2"
+def gen_build(build_file):
     context = {}
-    build_yaml = TEMPLATE_ENVIRONMENT.get_template(tname).render(context)
+    tenv = Environment(
+        autoescape=False,
+        loader=FileSystemLoader(os.path.dirname(build_file)),
+        trim_blocks=False)
+    build_yaml = tenv.get_template(os.path.basename(build_file)).render(context)
     build = yaml.safe_load(build_yaml)
     # create default vars
     for (k,v) in build.items():
+        v['name'] = k
         e = v.get('env', dict)
         e['IMAGE_BASE'] = v['base']
         e['IMAGE_NAME'] = k
-    sys.stdout.write("# %s (%s)\n" %(tname, "build"))
-    sys.stdout.write(yaml.dump(build, default_flow_style=False))
-    sys.stdout.write("\n\n")
+        #dir_base = os.path.relpath(os.path.dirname(build_file), start=PATH)
+        #e['docker_context'] = os.path.join(dir_base, k)
+    if DEBUG:
+        sys.stdout.write("# %s (%s)\n" %(build_file, "build"))
+        sys.stdout.write(yaml.dump(build, default_flow_style=False))
+        sys.stdout.write("\n\n")
+    return build
+
+@cli.command()
+def generate(): # {{{
+    '''Generate Dockerfiles'''
+    build = gen_build(os.path.join(PATH, "debian", "build.j2"))
     for (k,v) in build.items():
-        create(v['dockerfile'], v['env'], os.path.join(PATH, "debian", k, "Dockerfile"))
-# }}}
+        gen_docker(os.path.join(PATH, "debian", v['dockerfile']), v['env'], os.path.join(PATH, "debian", k, "Dockerfile"))
+#}}}
+
 
 if __name__ == '__main__':
     cli()
