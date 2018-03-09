@@ -86,6 +86,7 @@ def build_docker(cmds):
 @cli.command()
 @click.option('-j', '--max_workers', default=0, help="Number of parallel build workers")
 def build(max_workers): #{{{
+    '''Build docker images'''
     if max_workers == 0:
         max_workers = None
     executor = ThreadPoolExecutor(max_workers)
