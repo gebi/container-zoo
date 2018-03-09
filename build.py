@@ -6,7 +6,7 @@ import subprocess
 import click
 import yaml
 from jinja2 import Environment, FileSystemLoader
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 DEBUG=None
 
@@ -77,18 +77,19 @@ def get_base_images():
 @click.group()
 @click.option('--debug/--no-debug', default=False)
 def cli(debug):
-    #click.echo('Debug mode is %s' % ('on' if debug else 'off'))
     global DEBUG
     DEBUG=debug
 
 def build_docker(cmds):
-    completed_processs = [subprocess.run(i, check=True, stdout=subprocess.PIPE) for i in cmds]
-    return completed_processs
+    return [(i, subprocess.check_output(i)) for i in cmds]
 
 @cli.command()
-def build(): #{{{
-    executor = ThreadPoolExecutor(max_workers=8)
-    futures = []
+@click.option('-j', '--max_workers', default=0, help="Number of parallel build workers")
+def build(max_workers): #{{{
+    if max_workers == 0:
+        max_workers = None
+    executor = ThreadPoolExecutor(max_workers)
+    futures = {}
     for i in walk('.', buildfilter):
         build_file = os.path.join(PATH, i, "build.j2")
         if DEBUG:
@@ -98,21 +99,23 @@ def build(): #{{{
             v = build[k]
             first_docker_image_name = v['tags'][0]
             other_docker_image_names = v['tags'][1:]
-            cmd = [["docker", "build", "--no-cache", "-t", first_docker_image_name, os.path.join(i, k)]]
-            cmd.extend([["docker", "tag", first_docker_image_name, tag] for tag in other_docker_image_names])
+            cmds = [["docker", "build", "--no-cache", "-t", first_docker_image_name, os.path.join(i, k)]]
+            cmds.extend([["docker", "tag", first_docker_image_name, tag] for tag in other_docker_image_names])
             if DEBUG:
-                print(cmd)
-            else:
-                futures.append((executor.submit(build_docker, cmd), v))
-    for (future, build_spec) in futures.as_completed():
+                cmds = [ ["echo"] + i for i in cmds ]
+            futures[executor.submit(build_docker, cmds)] = v
+    for future in as_completed(futures):
         try:
-            completed_processs = future.result()
+            cmds_output = future.result()
+            build_spec = futures[future]
         except Exception as e:
             print('%r generated an exception: %s' %(build_spec, e))
         else:
-            # output executed docker output!!
             print('%r' %(build_spec))
-
+            for (cmd, out) in cmds_output:
+                print("#", " ".join(cmd))
+                sys.stdout.buffer.write(out)
+            sys.stdout.write("\n")
 # }}}
 
 @cli.command()
