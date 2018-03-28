@@ -1,4 +1,19 @@
 #!/usr/bin/python3
+# A small container image build script to mass create similar container images with different base images
+#
+# Idea should be:
+#   ./build.py upgrade_base ... parses all build.j2 files and updates all depended on base container images
+#   ./build.py build ... parses all build.j2 files and build all container  images
+#                        from generated Dockerfiles (without persisting them to disk)
+#
+# Currently the workflow is:
+#   ./build.py generate ... creates directory hierarchy and generates all Dockerfiles
+#                           specified in build.j2 files
+#                           actually currently hardcoded to only ./debian/build.j2
+#   ./build.py upgrade_base ... parses all Dockerfile it finds with name-schema policy and
+#                               update all base container images
+#   ./build.py build ... parses build.j2 files, find all containers to build and execute
+#                        commands to build container images (does NOT generate Dockerfiles)
 
 import sys
 import os
@@ -51,6 +66,7 @@ def buildfilter(dir):
 # }}}
 
 def getbase(dir):
+    '''Parse all base images used inside Dockerfile in dir'''
     from_ = set()
     for i in open(os.path.join(dir, 'Dockerfile'), 'r').readlines():
         i = i.lower()
@@ -61,6 +77,7 @@ def getbase(dir):
     return from_
 
 def get_container_name(dir):
+    '''Generate container name BY POLICY from directory name which contains a Dockerfile'''
     i = dir.lstrip('./').split('/')
     if len(i) == 1:
         return "local/%s" %(i[0])
@@ -70,6 +87,7 @@ def get_container_name(dir):
         raise RuntimeError("Incompatible directory for Dockerfile: %s" %(dir))
 
 def get_base_images():
+    '''Walk container dependency graph in global state cg/cgr and yield all roots'''
     for i in cgr:
         if i not in cg:
             yield i
@@ -81,6 +99,7 @@ def cli(debug):
     DEBUG=debug
 
 def build_docker(cmds):
+    '''Function to actually execute a list of cmdlines to build a container and store their output'''
     return [(i, subprocess.check_output(i)) for i in cmds]
 
 @cli.command()
@@ -157,6 +176,7 @@ def upgrade_base(update): # {{{
 # }}}
 
 def gen_docker(docker_template, context, output):
+    '''Core routine to parse templates specified in build.j2 to generate Dockerfiles from'''
     tenv = Environment(
         autoescape=False,
         loader=FileSystemLoader(os.path.dirname(docker_template)),
@@ -173,6 +193,26 @@ def gen_docker(docker_template, context, output):
         f.write('\n')
 
 def gen_build(build_file):
+    '''Core routine to parse build.j2 file, expand jinja2 templates and parse the result as yaml
+
+    Later on Dockerfile.j2 is expanded using the generated `env', all uppercase variables are
+    internal and set from build file metadata, but you can freely add additional variables.
+
+    Internal Variables generated in `env':
+    IMAGE_BASE ... Name of base docker image
+    IMAGE_NAME ... Name of image
+
+    :Example:
+    stretch:
+      base: debian:stretch
+      dockerfile: Dockerfile.j2
+      env:
+        dist_name: stretch
+      tags:
+      - local/debian:stretch
+      - local/debian:9
+      - local/debian:stable
+    '''
     context = {}
     tenv = Environment(
         autoescape=False,
