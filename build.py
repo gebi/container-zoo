@@ -18,6 +18,7 @@
 import sys
 import os
 import subprocess
+import multiprocessing
 import click
 import yaml
 from jinja2 import Environment, FileSystemLoader
@@ -103,11 +104,9 @@ def build_docker(cmds):
     return [(i, subprocess.check_output(i)) for i in cmds]
 
 @cli.command()
-@click.option('-j', '--max_workers', default=0, help="Number of parallel build workers")
+@click.option('-j', '--max_workers', default=multiprocessing.cpu_count(), help="Number of parallel build workers (default = %d)" %(multiprocessing.cpu_count()))
 def build(max_workers): #{{{
     '''Build docker images'''
-    if max_workers == 0:
-        max_workers = None
     executor = ThreadPoolExecutor(max_workers)
     futures = {}
     for i in walk('.', buildfilter):
