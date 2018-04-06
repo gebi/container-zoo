@@ -105,7 +105,8 @@ def build_docker(cmds):
 
 @cli.command()
 @click.option('-j', '--max_workers', default=multiprocessing.cpu_count(), help="Number of parallel build workers (default = %d)" %(multiprocessing.cpu_count()))
-def build(max_workers): #{{{
+@click.option('--cache/--no-cache', default=True, help="Per default docker cache is used")
+def build(max_workers, cache): #{{{
     '''Build docker images'''
     executor = ThreadPoolExecutor(max_workers)
     futures = {}
@@ -118,7 +119,10 @@ def build(max_workers): #{{{
             v = build[k]
             first_docker_image_name = v['tags'][0]
             other_docker_image_names = v['tags'][1:]
-            cmds = [["docker", "build", "--no-cache", "-t", first_docker_image_name, os.path.join(i, k)]]
+            base_cmd = ["docker", "build"]
+            if not cache:
+                base_cmd.append("--no-cache")
+            cmds = [base_cmd + ["-t", first_docker_image_name, os.path.join(i, k)]]
             cmds.extend([["docker", "tag", first_docker_image_name, tag] for tag in other_docker_image_names])
             if DEBUG:
                 cmds = [ ["echo"] + i for i in cmds ]
@@ -129,6 +133,7 @@ def build(max_workers): #{{{
             build_spec = futures[future]
         except Exception as e:
             print('%r generated an exception: %s' %(build_spec, e))
+            sys.exit(1)
         else:
             print('%r' %(build_spec))
             for (cmd, out) in cmds_output:
