@@ -2,8 +2,8 @@ FROM local/debian:sid
 MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
 RUN set -ex \
-    && apt-get install -y -q --no-install-recommends apt-file \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends apt-file \
     && apt-file update
 
 RUN set -ex \
-    && apt-get install -y -q --no-install-recommends vim-nox curl ca-certificates apt-transport-https build-essential devscripts equivs
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends vim-nox curl ca-certificates apt-transport-https build-essential devscripts equivs

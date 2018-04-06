@@ -8,4 +8,4 @@ RUN set -ex \
     && echo 'deb http://172.17.0.1:9999/debian jessie-updates main' >>/etc/apt/sources.list \
     && echo 'deb http://172.17.0.1:9999/debian-security jessie/updates main' >>/etc/apt/sources.list \
     && apt-get update -q \
-    && apt-get upgrade -y -q
+    && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -q
