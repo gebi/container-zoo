@@ -1,0 +1,40 @@
+#!/bin/bash
+# Author: Michael Gebetsroither <michael@mgeb.org>
+#
+# dapt <PROG1> <PROG2> ...
+#
+# a docker container with name local/PROG1 is build and all arguments are given to apt-get install
+
+base_="${BASE:-local/ubuntu:bionic}"
+build_args_="${BARGS}"
+run_args_="${RARGS}"
+if [[ $DEBUG == "true" ]]; then
+    debug_="true"
+else
+    debug_="false"
+fi
+tmp_="$(mktemp -d -t dapt.XXXXXXXXXX)"
+
+die() {
+    echo "ERROR: $@" >&2
+    exit 1
+}
+
+cat >$tmp_/Dockerfile <<EOT
+FROM $base_
+MAINTAINER Michael Gebetsroither <michael@mgeb.org>
+
+RUN set -ex \
+    && apt-get update -q \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends $@
+EOT
+
+docker build $build_args_ -t local/$1 $tmp_ || die "problems building container"
+
+if [[ $debug_ == "true" ]]; then
+    cat $tmp_/Dockerfile
+    echo docker run -it --rm --user 1000:1000 -v `pwd`:/mnt $run_args_ local/$1 /bin/bash -c "cd /mnt; exec /bin/bash"
+else
+    rm -rf $tmp_
+    docker run -it --rm --user 1000:1000 -v `pwd`:/mnt $run_args_ local/$1 /bin/bash -c "cd /mnt; exec /bin/bash"
+fi
