@@ -86,7 +86,10 @@ def getbase(dir):
     return from_
 
 def get_container_name(dir):
-    '''Generate container name BY POLICY from directory name which contains a Dockerfile'''
+    '''Generate container name BY POLICY from directory name which contains a Dockerfile
+         ./signal         => local/signal
+         ./debian/stretch => local/debian:stretch
+    '''
     i = dir.lstrip('./').split('/')
     if len(i) == 1:
         return "local/%s" %(i[0])
@@ -116,6 +119,115 @@ def build_docker(cmds):
 @click.option('--cache/--no-cache', default=True, help="Per default docker cache is used")
 def build(max_workers, cache): #{{{
     '''Build docker images'''
+    executor = ThreadPoolExecutor(max_workers)
+    futures = {}
+    for i in walk('.', buildfilter):
+        build_file = os.path.join(PATH, i, "build.j2")
+        if DEBUG:
+            print(i, build_file)
+        build = gen_build(build_file)
+        for k in sorted(build):
+            v = build[k]
+            first_docker_image_name = v['tags'][0]
+            other_docker_image_names = v['tags'][1:]
+            base_cmd = ["docker", "build"]
+            if not cache:
+                base_cmd.append("--no-cache")
+            cmds = [base_cmd + ["-t", first_docker_image_name, os.path.join(i, k)]]
+            cmds.extend([["docker", "tag", first_docker_image_name, tag] for tag in other_docker_image_names])
+            if DEBUG:
+                cmds = [ ["echo"] + i for i in cmds ]
+            futures[executor.submit(build_docker, cmds)] = v
+    for future in as_completed(futures):
+        try:
+            cmds_output = future.result()
+            build_spec = futures[future]
+        except Exception as e:
+            print('%r generated an exception: %s' %(build_spec, e))
+            sys.exit(1)
+        else:
+            print('%r' %(build_spec))
+            for (cmd, out) in cmds_output:
+                print("#", " ".join(cmd))
+                sys.stdout.buffer.write(out)
+            sys.stdout.write("\n")
+# }}}
+
+# Format a dependency graph for printing
+def format_dependencies(name_to_deps):
+    msg = []
+    for name, deps in name_to_deps.items():
+        for parent in deps:
+            msg.append("%s -> %s" % (name, parent))
+    return "\n".join(msg)
+
+# "Batches" are sets of tasks that can be run together
+def get_batches(nodes):
+
+    # Build a map of node names to node instances
+    name_to_instance = dict( (n.name, n) for n in nodes )
+
+    # Build a map of node names to dependency names
+    name_to_deps = dict( (n.name, set(n.base)) for n in nodes )
+
+    # This is where we'll store the batches
+    batches = []
+
+    # While there are dependencies to solve...
+    while name_to_deps:
+
+        # Get all nodes with no dependencies
+        ready = {name for name, deps in name_to_deps.items() if not deps}
+
+        # If there aren't any, we have a loop in the graph
+        if not ready:
+            msg  = "Circular dependencies found!\n"
+            msg += format_dependencies(name_to_deps)
+            raise ValueError(msg)
+
+        # Remove them from the dependency graph
+        for name in ready:
+            del name_to_deps[name]
+        for deps in name_to_deps.values():
+            deps.difference_update(ready)
+
+        # Add the batch to the list
+        batches.append( {name_to_instance[name] for name in ready} )
+
+@cli.command()
+@click.option('-j', '--max_workers', default=multiprocessing.cpu_count(), help="Number of parallel build workers (default = %d)" %(multiprocessing.cpu_count()))
+@click.option('--cache/--no-cache', default=True, help="Per default docker cache is used")
+def build1(max_workers, cache): #{{{
+    '''Build docker images'''
+    # generate build specs
+    builds = []
+    for i in walk('.', buildfilter):
+        build_file = os.path.join(PATH, i, "build.j2")
+        if DEBUG:
+            print(i, build_file)
+        build = gen_build(build_file)
+        builds.extend(build)
+    #FIXME: gether all build files
+    # dep resolution
+    build_batches = get_batches(builds)
+    print("BAAAAR")
+    for i in build_batches:
+        print(",".join([j.name for j in i]))
+    sys.exit(42)
+
+    for i in build_batches:
+        for k in sorted(build):
+            v = build[k]
+            first_docker_image_name = v['tags'][0]
+            other_docker_image_names = v['tags'][1:]
+            base_cmd = ["docker", "build"]
+            if not cache:
+                base_cmd.append("--no-cache")
+            cmds = [base_cmd + ["-t", first_docker_image_name, os.path.join(i, k)]]
+            cmds.extend([["docker", "tag", first_docker_image_name, tag] for tag in other_docker_image_names])
+            if DEBUG:
+                cmds = [ ["echo"] + i for i in cmds ]
+            futures[executor.submit(build_docker, cmds)] = v
     executor = ThreadPoolExecutor(max_workers)
     futures = {}
     for i in walk('.', buildfilter):
@@ -232,19 +344,34 @@ def gen_build(build_file):
         trim_blocks=False)
     build_yaml = tenv.get_template(os.path.basename(build_file)).render(context)
     build = yaml.safe_load(build_yaml)
+    for (k,v) in build.items():
+        print("FOOO")
+        print(k, v)
+    build_specs = []
     # create default vars
     for (k,v) in build.items():
         v['name'] = k
         e = v.get('env', dict)
         e['IMAGE_BASE'] = v['base']
         e['IMAGE_NAME'] = k
+        b = Build(k, v['base'], v)
+        build_specs.append(b)
         #dir_base = os.path.relpath(os.path.dirname(build_file), start=PATH)
         #e['docker_context'] = os.path.join(dir_base, k)
+    # add vars needed for internal stuff
+    #build.name = 
+    #build.depends = set(v['base'])  # currently not needed to be a set, but needed later on for multi stage dockerfiles
     if DEBUG:
         sys.stdout.write("# %s (%s)\n" %(build_file, "build"))
         sys.stdout.write(yaml.dump(build, default_flow_style=False))
         sys.stdout.write("\n\n")
-    return build
+    return build_specs
+
+class Build(object):
+    def __init__(self, name, base, spec):
+        self.spec = spec
+        self.name = name
+        self.base = set(base)
 
 @cli.command()
 def generate(): # {{{
