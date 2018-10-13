@@ -36,7 +36,15 @@ cgr = {}
 PATH = os.path.dirname(os.path.abspath(__file__))
 
 # walk {{{
-def walk(path, filter):
+def walk(list_of_paths, filter):
+    try:
+        iterator = iter(list_of_paths)
+        for i in list_of_paths:
+            return walk_(i, filter)
+    except exception.TypeError:
+        return walk_(i, filter)
+
+def walk_(path, filter):
     '''yield every directory matched from filter(x) under path, recursively.'''
     def errhandler(err):
         if err.filename == path:
@@ -146,7 +154,7 @@ def build(max_workers, cache): #{{{
 @click.option('--update/--no-update', default=False)
 def upgrade_base(update): # {{{
     '''Upgrade base docker images'''
-    for i in walk('.', dockerfilter):
+    for i in walk(['debian', 'ubuntu'], dockerfilter):
         #print(i)
         container_base = getbase(i)
         container_name = get_container_name(i)
