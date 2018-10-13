@@ -180,7 +180,7 @@ def upgrade_base(update): # {{{
 
     print("\nUpdating base images:")
     to_update = sorted(filter(lambda x: x.find('/') == -1, get_base_images()))
-    cmd = ["parallel", "docker", "pull", "--"] + to_update
+    cmd = ["parallel", "docker", "pull", "--disable-content-trust=false", "--"] + to_update
     print("\t%s" % cmd)
     if update:
         subprocess.check_call(cmd)
