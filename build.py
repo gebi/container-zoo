@@ -166,24 +166,37 @@ def get_batches(nodes):
 
     # Build a map of node names to node instances
     name_to_instance = dict( (n.name, n) for n in nodes )
+    print("name_to_instace", name_to_instance)
 
     # Build a map of node names to dependency names
+    #name_to_deps = dict( (n.name, set(n.base)) for n in nodes )
+    for n in nodes:
+        print(n.name, " -> ", n.base)
     name_to_deps = dict( (n.name, set(n.base)) for n in nodes )
+    print("name_to_deps: ", name_to_deps)
+    #print("name_to_deps: ")
+    #for (name,dep_set) in name_to_deps:
+    #    print("%s -> %s" %(name, ",".join(dep_set)))
 
     # This is where we'll store the batches
     batches = []
 
     # While there are dependencies to solve...
     while name_to_deps:
+        print("batches: ", batches)
 
         # Get all nodes with no dependencies
         ready = {name for name, deps in name_to_deps.items() if not deps}
+        print("ready: ", ready)
 
         # If there aren't any, we have a loop in the graph
         if not ready:
-            msg  = "Circular dependencies found!\n"
-            msg += format_dependencies(name_to_deps)
-            raise ValueError(msg)
+            #msg  = "Circular dependencies found!\n"
+            #msg += format_dependencies(name_to_deps)
+            #raise ValueError(msg)
+            print("last batch found: ", name_to_deps)
+            batches.append({name_to_instance[name] for name in name_to_deps})
+            break
 
         # Remove them from the dependency graph
         for name in ready:
@@ -191,62 +204,70 @@ def get_batches(nodes):
         for deps in name_to_deps.values():
             deps.difference_update(ready)
 
+        print("name_to_deps left: ", name_to_deps)
         # Add the batch to the list
         batches.append( {name_to_instance[name] for name in ready} )
+    return batches
+
+def expand_remote_nodes(nodes):
+    name_to_instance = dict( (n.spec['tags'][0], n) for n in nodes )
+    remote_nodes = {}
+    for name, instance in name_to_instance.items():
+        for i in instance.base:
+            if i not in name_to_instance:
+                if i not in remote_nodes:
+                    remote_nodes[i] = create_remote_build(i)
+    nodes.extend(remote_nodes.values())
+    return nodes
 
 @cli.command()
 @click.option('-j', '--max_workers', default=multiprocessing.cpu_count(), help="Number of parallel build workers (default = %d)" %(multiprocessing.cpu_count()))
 @click.option('--cache/--no-cache', default=True, help="Per default docker cache is used")
 def build1(max_workers, cache): #{{{
     '''Build docker images'''
+    executor = ThreadPoolExecutor(max_workers)
     # generate build specs
-    builds = []
+    local_builds = []
     for i in walk('.', buildfilter):
         build_file = os.path.join(PATH, i, "build.j2")
         if DEBUG:
             print(i, build_file)
         build = gen_build(build_file)
-        builds.extend(build)
+        local_builds.extend(build)
+    # add remote edge nodes (container that are not build in this step as stub Build objects
+    for i in local_builds:
+        print(i.name)
+    builds = expand_remote_nodes(local_builds)
+    print("Fooo")
+    for i in builds:
+        print(i.name)
     #FIXME: gether all build files
     # dep resolution
     build_batches = get_batches(builds)
-    print("BAAAAR")
+    print(build_batches)
     for i in build_batches:
         print(",".join([j.name for j in i]))
-    sys.exit(42)
 
-    for i in build_batches:
-        for k in sorted(build):
-            v = build[k]
-            first_docker_image_name = v['tags'][0]
-            other_docker_image_names = v['tags'][1:]
-            base_cmd = ["docker", "build"]
-            if not cache:
-                base_cmd.append("--no-cache")
-            cmds = [base_cmd + ["-t", first_docker_image_name, os.path.join(i, k)]]
-            cmds.extend([["docker", "tag", first_docker_image_name, tag] for tag in other_docker_image_names])
-            if DEBUG:
-                cmds = [ ["echo"] + i for i in cmds ]
-            futures[executor.submit(build_docker, cmds)] = v
-    executor = ThreadPoolExecutor(max_workers)
     futures = {}
-    for i in walk('.', buildfilter):
-        build_file = os.path.join(PATH, i, "build.j2")
-        if DEBUG:
-            print(i, build_file)
-        build = gen_build(build_file)
-        for k in sorted(build):
-            v = build[k]
+    for batch in build_batches:
+        for b in sorted(batch):
+            if b.remote:
+                # later support pull of remote images
+                continue
+            k = b.name
+            v = b.spec
             first_docker_image_name = v['tags'][0]
             other_docker_image_names = v['tags'][1:]
             base_cmd = ["docker", "build"]
             if not cache:
                 base_cmd.append("--no-cache")
+            i = 'debian/'  # FIXME
             cmds = [base_cmd + ["-t", first_docker_image_name, os.path.join(i, k)]]
             cmds.extend([["docker", "tag", first_docker_image_name, tag] for tag in other_docker_image_names])
             if DEBUG:
                 cmds = [ ["echo"] + i for i in cmds ]
             futures[executor.submit(build_docker, cmds)] = v
+
     for future in as_completed(futures):
         try:
             cmds_output = future.result()
@@ -367,11 +388,21 @@ def gen_build(build_file):
         sys.stdout.write("\n\n")
     return build_specs
 
+def create_remote_build(name):
+    return Build(name, None, None, remote=True)
+
 class Build(object):
-    def __init__(self, name, base, spec):
+    def __init__(self, name, base, spec, remote=False):
         self.spec = spec
         self.name = name
-        self.base = set(base)
+        if base is None:
+            self.base = set()
+        else:
+            self.base = set([base])
+        self.remote = remote
+    def __lt__(self, other):
+        return self.name < other.name
+
 
 @cli.command()
 def generate(): # {{{
