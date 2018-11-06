@@ -5,23 +5,103 @@
 #
 # a docker container with name local/PROG1 is build and all arguments are given to apt-get install
 
-base_="${BASE:-local/ubuntu:bionic}"
-build_args_="${BARGS}"
-run_args_="${RARGS}"
+# default config
+PROG_NAME_=`basename $0`
+MODULES_STRING_="dump,pull,build,run"
+BASE_="${BASE:-debian:testing}"
+BUILD_ARGS_="${BARGS}"
+IMAGE_NAME_=""  # can only be set after cmdline arg parsing
+RUN_ARGS_="${RARGS}"
+RUN_USER_="${RUSER:-1000:1000}"
+MAX_BASE_IMAGE_AGE_="30 days ago"
 if [[ $DEBUG == "true" ]]; then
-    debug_="true"
+    DEBUG_="true"
 else
-    debug_="false"
+    DEBUG_="false"
 fi
-tmp_="$(mktemp -d -t dapt.XXXXXXXXXX)"
 
 die() {
     echo "ERROR: $@" >&2
     exit 1
 }
 
-cat >$tmp_/Dockerfile <<EOT
-FROM $base_
+dump_config() {
+    cat <<EOT
+{ "docker_base_image": "$BASE_",
+  "docker_build_args": "$BUILD_ARGS_",
+  "docker_image_name": "$IMAGE_NAME_",
+  "docker_run_args":   "$RUN_ARGS_",
+  "docker_run_user":   "$RUN_USER_" }
+EOT
+}
+
+print_usage() {
+    cat <<EOT
+Usage: "$PROG_NAME_" [OPTIONS] package1 package2 ...
+
+$PROG_NAME_ is a convenience tool to dynamically create docker images and starting them.
+  1. it is cache friendly, if you build the same container multiple times it is
+        properly cached, the cache is per BASE container.
+        (WARNING 1: if you use local containers you have to periodically rebuild
+        your base containers to get security updates!)
+  2. it automatically mounts your current working directory to /mnt inside the container
+        and automatically changes directory to /mnt inside the container when run
+  3. For proper security it executes the container with a configurable user (!NOT root)
+
+OPTIONS:
+  -m  Modules to execute (default: dump,build,run)
+  -h  Print this Usage
+  -v  Enable debugging
+
+CONFIG FILE:
+  ~/.config/dapt/config
+
+USAGE EXAMPLE:
+    dapt imagemagick webp
+
+CURRENT LIMITATIONS:
+    You have to pull all your base containers manually to get security updates if you use
+    them directly from docker hub, eg. debian:testing
+
+EOT
+}
+
+action_dump() {
+    dump_config
+}
+
+action_pull() {
+    local image_created_="$(docker inspect -f '{{ .Created }}' $BASE_)"
+    if [[ $image_created_ == "" ]]; then
+        echo "WARNING: Problem getting image data, not updating" >&2
+        return
+    fi
+    local image_parent_="$(docker inspect -f '{{ .Parent }}' $BASE_)"
+
+    local image_created_ts_="$(date -d "$image_created_" +%s)"
+    local max_base_image_age_ts_="$(date -d "$MAX_BASE_IMAGE_AGE_" +%s)"
+
+    if [[ $DEBUG_ == "true" ]]; then
+        echo "Parent image age current:  $(date -d @$image_created_ts_)"
+        echo "Parent image age - maxage: $(date -d @$max_base_image_age_ts_)"
+    fi
+    if (( $max_base_image_age_ts_ > $image_created_ts_ )); then
+        # UPDATE base image
+        if [[ $image_parent_ != "" ]]; then
+            echo "Your base image is out of date and should be updated" >&2
+            echo "Updates of images with parent currently unsupported (not updating!)" >&2
+            return
+        else
+            docker pull --disable-content-trust=false $BASE_
+        fi
+    else
+        $DEBUG_ && echo "No need to update base image" >&2
+    fi
+}
+
+action_build() {
+    cat >$tmp_/Dockerfile <<EOT
+FROM $BASE_
 MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
 RUN set -ex \
@@ -29,12 +109,49 @@ RUN set -ex \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends $@
 EOT
 
-docker build $build_args_ -t local/$1 $tmp_ || die "problems building container"
+    docker build $BUILD_ARGS_ -t "$IMAGE_NAME_" $tmp_ || die "problems building container"
+}
 
-if [[ $debug_ == "true" ]]; then
-    cat $tmp_/Dockerfile
-    echo docker run -it --rm --user 1000:1000 -v `pwd`:/mnt $run_args_ local/$1 /bin/bash -c "cd /mnt; exec /bin/bash"
-else
-    rm -rf $tmp_
-    docker run -it --rm --user 1000:1000 -v `pwd`:/mnt $run_args_ local/$1 /bin/bash -c "cd /mnt; exec /bin/bash"
-fi
+action_run() {
+    if [[ $DEBUG_ == "true" ]]; then
+        cat $tmp_/Dockerfile
+        echo docker run -it --rm --user "$RUN_USER_" -v `pwd`:/mnt $RUN_ARGS_ "$IMAGE_NAME_" /bin/bash -c "cd /mnt; exec /bin/bash"
+    else
+        rm -rf $tmp_
+        docker run -it --rm --user "$RUN_USER_" -v `pwd`:/mnt $RUN_ARGS_ "$IMAGE_NAME_" /bin/bash -c "cd /mnt; exec /bin/bash"
+    fi
+}
+
+
+###
+## MAIN
+###
+
+tmp_="$(mktemp -d -t dapt.XXXXXXXXXX)"
+
+while getopts "m:hv" opt; do
+  case "$opt" in
+    m) MODULES_STRING_="${OPTARG}" ;;
+    h) print_usage; exit ;;
+    v) DEBUG_="true" ;;
+    ?) print_usage; exit 1 ;;
+  esac
+done
+shift $(($OPTIND - 1))  # set ARGV to the first not parsed commandline parameter
+
+IMAGE_NAME_="local/dapt_$(echo ${BASE_#*/} |tr '/:' '_'):$1"
+
+# parse modules into array separated on ','
+IFS=',' MODULES_=($MODULES_STRING_);
+
+# load config file
+#  the idea is that all defaults are already set and cmdline is parsed
+#  override any settings at your will with shell script snippets in your config file
+#  WARNING: you work with implementation details subjected to change without notice!
+. ~/.config/dapt/config &>/dev/null
+
+# execute modules
+for i in "${MODULES_[@]}"; do
+    echo "// Step \"$i\"" >&2
+    action_$i "$@"
+done
