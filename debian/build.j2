@@ -24,6 +24,9 @@ set debian_releases = [
     dockerfile: Dockerfile-dev.j2
     tags:
       - local/debian:{{i.name}}-dev
+    {%- for tags in i.tags %}
+      - local/debian:{{tags}}-dev
+    {%- endfor %}
     base: local/debian:{{i.name}}
     env:
       dist_name: {{i.name}}
