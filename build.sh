@@ -21,6 +21,7 @@ docker tag local/ubuntu:18.04 local/ubuntu:bionic
 
 # app images
 docker build -t local/hledger hledger
+docker build -t local/accounting accounting
 docker build -t local/ida ida
 docker build -t local/signal signal
 
