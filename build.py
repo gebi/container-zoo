@@ -365,9 +365,6 @@ def gen_build(build_file):
         trim_blocks=False)
     build_yaml = tenv.get_template(os.path.basename(build_file)).render(context)
     build = yaml.safe_load(build_yaml)
-    for (k,v) in build.items():
-        print("FOOO")
-        print(k, v)
     build_specs = []
     # create default vars
     for (k,v) in build.items():
@@ -402,14 +399,16 @@ class Build(object):
         self.remote = remote
     def __lt__(self, other):
         return self.name < other.name
+    def __str__(self):
+        return "%s(spec=%s)" %(self.name, self.spec)
 
 
 @cli.command()
 def generate(): # {{{
     '''Generate Dockerfiles'''
     build = gen_build(os.path.join(PATH, "debian", "build.j2"))
-    for (k,v) in build.items():
-        gen_docker(os.path.join(PATH, "debian", v['dockerfile']), v['env'], os.path.join(PATH, "debian", k, "Dockerfile"))
+    for i in build:
+        gen_docker(os.path.join(PATH, "debian", i.spec['dockerfile']), i.spec['env'], os.path.join(PATH, "debian", i.name, "Dockerfile"))
 #}}}
 
 
