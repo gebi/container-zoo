@@ -19,6 +19,9 @@ docker tag local/ubuntu:16.04 local/ubuntu:xenial
 docker build $* -t local/ubuntu:18.04 ubuntu/18.04
 docker tag local/ubuntu:18.04 local/ubuntu:bionic
 
+docker build $* -t local/centos:7 centos/7
+docker build $* -t local/centos:7-dev centos/7-dev
+
 # app images
 docker build -t local/hledger hledger
 docker build -t local/accounting accounting
