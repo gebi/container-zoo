@@ -1,0 +1,4 @@
+%packager Michael Gebetsroither <michael@mgeb.org>
+%vendor mgIT GmbH
+%_topdir /mnt
+%__perl_requires %{nil}
