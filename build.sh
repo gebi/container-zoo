@@ -31,6 +31,7 @@ docker build -t local/signal signal
 # not used anymore / only for testing
 #docker build $* -t local/scribus scribus
 #docker build $* -t local/coq coq
+#docker build -t local/ara ara
 
 # doesn't work
 #  wants to upload crash dump with wget, no error output if wget is available, and still does not work
