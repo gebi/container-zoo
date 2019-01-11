@@ -27,6 +27,7 @@ docker build -t local/hledger hledger
 docker build -t local/accounting accounting
 docker build -t local/ida ida
 docker build -t local/signal signal
+docker build -t local/ytdl ytdl
 
 # not used anymore / only for testing
 #docker build $* -t local/scribus scribus
