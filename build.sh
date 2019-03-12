@@ -28,6 +28,8 @@ docker build -t local/accounting accounting
 docker build -t local/ida ida
 docker build -t local/signal signal
 docker build -t local/ytdl ytdl
+docker build -t local/fpm fpm
+docker build -t local/rt4-dev rt4-dev
 
 # not used anymore / only for testing
 #docker build $* -t local/scribus scribus
