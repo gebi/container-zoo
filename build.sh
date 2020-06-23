@@ -6,6 +6,7 @@ parallel docker pull -- alpine:latest debian:jessie debian:stretch debian:buster
 
 # base images
 docker build $* -t local/alpine-dev alpine-dev
+docker build $* -t local/debian:buster debian/buster
 docker build $* -t local/debian:stretch debian/stretch
 docker build $* -t local/debian:jessie debian/jessie
 docker build $* -t local/debian:sid debian/sid
@@ -18,6 +19,9 @@ docker tag local/ubuntu:16.04 local/ubuntu:xenial
 
 docker build $* -t local/ubuntu:18.04 ubuntu/18.04
 docker tag local/ubuntu:18.04 local/ubuntu:bionic
+
+docker build $* -t local/ubuntu:20.04 ubuntu/20.04
+docker tag local/ubuntu:20.04 local/ubuntu:focal
 
 docker build $* -t local/centos:7 centos/7
 docker build $* -t local/centos:7-dev centos/7-dev
