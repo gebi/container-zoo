@@ -1,4 +1,4 @@
-FROM local/ubuntu:18.04
+FROM local/ubuntu:20.04
 MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
 RUN set -ex \
