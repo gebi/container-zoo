@@ -11,8 +11,8 @@ docker build $* -t local/debian:stretch debian/stretch
 docker build $* -t local/debian:jessie debian/jessie
 docker build $* -t local/debian:sid debian/sid
 
-docker build $* -t local/ubuntu:14.04 ubuntu/14.04
-docker tag local/ubuntu:14.04 local/ubuntu:trusty
+#docker build $* -t local/ubuntu:14.04 ubuntu/14.04
+#docker tag local/ubuntu:14.04 local/ubuntu:trusty
 
 docker build $* -t local/ubuntu:16.04 ubuntu/16.04
 docker tag local/ubuntu:16.04 local/ubuntu:xenial
@@ -34,6 +34,10 @@ docker build -t local/signal signal
 docker build -t local/ytdl ytdl
 docker build -t local/fpm fpm
 docker build -t local/rt4-dev rt4-dev
+
+# public images
+docker build -t gebi/avif avif/20.04
+#docker push gebi/avif
 
 # not used anymore / only for testing
 #docker build $* -t local/scribus scribus
