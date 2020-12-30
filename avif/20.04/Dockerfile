@@ -6,8 +6,7 @@ FROM ubuntu:20.04 AS build-image
 MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
 RUN apt-get update \
-  && echo 'APT::Install-Recommends "false";' >/etc/apt/apt.conf.d/10own \
-  && DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates git golang gcc libc-dev libaom-dev
+  && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y ca-certificates git golang gcc libc-dev libaom-dev
 
 RUN mkdir -p /go/src/github.com/Kagami \
   && cd /go/src/github.com/Kagami \
@@ -23,8 +22,7 @@ FROM ubuntu:20.04 AS runtime-image
 MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
 RUN apt-get update \
-  && echo 'APT::Install-Recommends "false";' >/etc/apt/apt.conf.d/10own \
-  && DEBIAN_FRONTEND=noninteractive apt-get install -y libaom0
+  && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y libaom0
 
 COPY --from=build-image /go/bin/avif /avif
 
