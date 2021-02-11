@@ -30,16 +30,16 @@ docker build $* -t local/centos:7-dev centos/7-dev
 docker build -t local/hledger hledger
 docker build -t local/accounting accounting
 docker build -t local/ida ida
-docker build -t local/signal signal
 docker build -t local/ytdl ytdl
 docker build -t local/fpm fpm
 docker build -t local/rt4-dev rt4-dev
 
-# public images
+# published images
 docker build -t gebi/avif avif/20.04
 #docker push gebi/avif
 
 # not used anymore / only for testing
+#docker build -t local/signal signal
 #docker build $* -t local/scribus scribus
 #docker build $* -t local/coq coq
 #docker build -t local/ara ara
