@@ -1,4 +1,4 @@
-FROM ubuntu:focal
+FROM ubuntu:rolling
 MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
 RUN set -ex \
