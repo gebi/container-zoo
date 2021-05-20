@@ -2,7 +2,7 @@
 ## BUILD image
 ###
 
-FROM ubuntu:20.04 AS build-image
+FROM ubuntu:groovy-20210416 AS build-image
 MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
 RUN apt-get update \
@@ -18,7 +18,7 @@ RUN mkdir -p /go/src/github.com/Kagami \
 ## RUNTIME image
 ###
 
-FROM ubuntu:20.04 AS runtime-image
+FROM ubuntu:groovy-20210416 AS runtime-image
 MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
 RUN apt-get update \
