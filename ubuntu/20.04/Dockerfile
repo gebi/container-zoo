@@ -1,4 +1,4 @@
-FROM ubuntu:focal
+FROM ubuntu:groovy-20210416
 MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
 RUN set -ex \
