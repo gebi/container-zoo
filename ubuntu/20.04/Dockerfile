@@ -1,4 +1,4 @@
-FROM ubuntu:focal
+FROM ubuntu:20.10
 MAINTAINER Michael Gebetsroither <michael@mgeb.org>
 
 RUN set -ex \
