@@ -2,10 +2,12 @@
 
 set -ex
 
-parallel docker pull -- alpine:latest debian:jessie debian:stretch debian:buster debian:sid ubuntu:trusty ubuntu:xenial ubuntu:bionic
+parallel docker pull -- alpine:latest debian:jessie debian:stretch debian:buster debian:bullseye debian:bookworm debian:sid ubuntu:trusty ubuntu:xenial ubuntu:bionic
 
 # base images
 docker build $* -t local/alpine-dev alpine-dev
+docker build $* -t local/debian:bookworm debian/bookworm
+docker build $* -t local/debian:bullseye debian/bullseye
 docker build $* -t local/debian:buster debian/buster
 docker build $* -t local/debian:stretch debian/stretch
 docker build $* -t local/debian:jessie debian/jessie
