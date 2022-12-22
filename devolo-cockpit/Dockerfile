@@ -1,6 +1,11 @@
 # container to execute devolo-cockpit on modern linux systems properly
-# Usage: WARNING: running as root
+#
+# Usage: (WARNING: running as root)
 #   docker run -it --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --network=host local/devolo-cockpit
+#
+# Build with:
+#   docker build -t local/devolo-cockpit:v5-2-0-185 devolo-cockpit
+#
 # (c) 2022 Michael Gebetsroither <m.gebetsr@gmail.com>
 
 FROM local/debian:bullseye
